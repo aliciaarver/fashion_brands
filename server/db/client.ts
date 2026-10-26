@@ -9,7 +9,8 @@ const globalForDatabase = globalThis as unknown as {
 
 export function useDatabase() {
   const config = useRuntimeConfig()
-  const sql = globalForDatabase.fashionSql || postgres(config.databaseUrl, { max: 8 })
+  // На хостинге (Vercel) адрес базы задаётся переменной окружения во время работы, а не при сборке
+  const sql = globalForDatabase.fashionSql || postgres(process.env.DATABASE_URL || config.databaseUrl, { max: 8 })
 
   if (process.env.NODE_ENV !== 'production') {
     globalForDatabase.fashionSql = sql
