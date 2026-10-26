@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Brand, BrandLinkType } from '~~/shared/types/brand'
-import { CATEGORY_OPTIONS, COUNTRY_OPTIONS, LINK_TYPE_OPTIONS } from '~~/shared/constants/catalog'
+import { CATEGORY_ICONS, CATEGORY_OPTIONS, COUNTRY_OPTIONS, LINK_TYPE_ICONS, LINK_TYPE_OPTIONS } from '~~/shared/constants/catalog'
 import { isVideoPermalink } from '~~/shared/utils/links'
 
 // Без brand — создание нового, с brand — редактирование существующего
@@ -211,32 +211,31 @@ async function submit() {
   <main class="admin-page">
     <header class="admin-page__header">
       <div>
-        <p class="eyebrow">Редактор каталога</p>
         <h1>{{ brand ? brand.name : 'Новый бренд' }}</h1>
         <p>{{ brand ? 'Редактирование карточки бренда.' : 'Создайте черновик или сразу опубликуйте заполненную карточку.' }}</p>
-        <p v-if="successMessage" class="form-success" role="status">{{ successMessage }}</p>
+        <p v-if="successMessage" class="notice notice--success" role="status"><AppIcon name="check" /> {{ successMessage }}</p>
       </div>
-      <NuxtLink :to="brand?.status === 'published' ? `/brands/${brand.slug}` : '/'">Закрыть</NuxtLink>
+      <NuxtLink class="pill-button pill-button--soft" :to="brand?.status === 'published' ? `/brands/${brand.slug}` : '/'"><AppIcon name="close" /> Закрыть</NuxtLink>
     </header>
 
     <form class="brand-form" @submit.prevent="submit">
       <section class="form-section">
-        <div class="form-section__title"><span>01</span><div><h2>Основное</h2><p>Название бренда.</p></div></div>
+        <div class="form-section__title"><span class="form-section__icon"><AppIcon name="edit" /></span><div><h2>Основное</h2><p>Название бренда.</p></div></div>
         <div class="form-fields">
           <label>Название бренда<input v-model="form.name" required minlength="2" placeholder="Например, Nami Form"></label>
         </div>
       </section>
 
       <section class="form-section">
-        <div class="form-section__title"><span>02</span><div><h2>Классификация</h2><p>Страна происхождения и категории товаров. У бренда может быть несколько категорий.</p></div></div>
+        <div class="form-section__title"><span class="form-section__icon"><AppIcon name="tag" /></span><div><h2>Классификация</h2><p>Страна происхождения и категории товаров. У бренда может быть несколько категорий.</p></div></div>
         <div class="form-fields">
-          <label>Страна<select v-model="form.countries[0]"><option v-for="country in COUNTRY_OPTIONS" :key="country.value" :value="country.value">{{ country.label }}</option></select></label>
+          <label>Страна<select v-model="form.countries[0]"><option v-for="country in COUNTRY_OPTIONS" :key="country.value" :value="country.value">{{ country.flag }} {{ country.label }}</option></select></label>
           <div class="category-picker">
             <span class="category-picker__label">Категории</span>
             <div class="category-picker__options">
               <label v-for="category in CATEGORY_OPTIONS" :key="category" class="category-chip">
                 <input type="checkbox" :checked="form.categories.includes(category)" @change="toggleCategory(category)">
-                <span>{{ category }}</span>
+                <AppIcon :name="CATEGORY_ICONS[category] || 'tag'" /><span>{{ category }}</span>
               </label>
             </div>
           </div>
@@ -244,43 +243,45 @@ async function submit() {
       </section>
 
       <section class="form-section">
-        <div class="form-section__title"><span>03</span><div><h2>Ссылки</h2><p>Официальные сайты, профили Instagram, другие ресурсы (маркетплейсы и т.п.). Каждого типа можно добавить сколько угодно.</p></div></div>
+        <div class="form-section__title"><span class="form-section__icon"><AppIcon name="link" /></span><div><h2>Ссылки</h2><p>Официальные сайты, профили Instagram, другие ресурсы (маркетплейсы и т.п.). Каждого типа можно добавить сколько угодно.</p></div></div>
         <div class="form-fields">
           <div v-for="(link, index) in form.links" :key="index" class="link-editor">
+            <span class="link-editor__icon"><AppIcon :name="LINK_TYPE_ICONS[link.type]" /></span>
             <select v-model="link.type" aria-label="Тип ссылки">
               <option v-for="option in LINK_TYPE_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
             <input v-model="link.url" required type="url" :placeholder="link.type === 'instagram' ? 'https://www.instagram.com/...' : 'https://'" aria-label="Адрес ссылки">
-            <button type="button" aria-label="Удалить ссылку" @click="removeLink(index)">×</button>
+            <button type="button" class="icon-button" aria-label="Удалить ссылку" @click="removeLink(index)"><AppIcon name="close" /></button>
           </div>
-          <button class="text-button" type="button" @click="addLink">+ Добавить ссылку</button>
+          <button class="pill-button pill-button--soft" type="button" @click="addLink"><AppIcon name="plus" /> Добавить ссылку</button>
         </div>
       </section>
 
       <section class="form-section">
-        <div class="form-section__title"><span>04</span><div><h2>Видео</h2><p>Ссылки на Reels/посты Instagram с видео бренда. Жмёте «+» — появляется поле, вставляете ссылку.</p></div></div>
+        <div class="form-section__title"><span class="form-section__icon"><AppIcon name="play" /></span><div><h2>Видео</h2><p>Ссылки на Reels/посты Instagram с видео бренда. Жмёте «+» — появляется поле, вставляете ссылку.</p></div></div>
         <div class="form-fields">
           <div v-for="(video, index) in videos" :key="index" class="video-link">
             <div class="video-link-editor">
               <input v-model="video.url" required type="url" placeholder="https://www.instagram.com/reel/..." @input="video.check = null">
-              <button class="text-button" type="button" :disabled="video.checking || !video.url.trim()" @click="checkVideo(video)">{{ video.checking ? 'Проверяем…' : 'Проверить' }}</button>
-              <button type="button" aria-label="Удалить ссылку на видео" @click="removeVideoUrl(index)">×</button>
+              <button class="pill-button pill-button--soft" type="button" :disabled="video.checking || !video.url.trim()" @click="checkVideo(video)"><AppIcon name="shield" /> {{ video.checking ? 'Проверяем…' : 'Проверить' }}</button>
+              <button type="button" class="icon-button" aria-label="Удалить ссылку на видео" @click="removeVideoUrl(index)"><AppIcon name="close" /></button>
             </div>
-            <p v-if="video.check" :class="video.check.status === 'playable' ? 'form-success' : 'form-error'" class="video-link__status">{{ videoCheckText(video.check) }}</p>
+            <p v-if="video.check" :class="video.check.status === 'playable' ? 'form-success' : 'form-error'" class="video-link__status"><AppIcon :name="video.check.status === 'playable' ? 'check' : 'info'" /> {{ videoCheckText(video.check) }}</p>
           </div>
-          <button class="text-button" type="button" @click="addVideoUrl">+ Добавить ссылку на видео</button>
+          <button class="pill-button pill-button--soft" type="button" @click="addVideoUrl"><AppIcon name="plus" /> Добавить видео</button>
         </div>
       </section>
 
       <section class="form-section">
-        <div class="form-section__title"><span>05</span><div><h2>Изображения</h2><p>Подтяните изображения с сайта бренда, который вы указали в ссылках выше. Нужно от 1 до 5 изображений.</p></div></div>
+        <div class="form-section__title"><span class="form-section__icon"><AppIcon name="image" /></span><div><h2>Изображения</h2><p>Подтяните изображения с сайта бренда, который вы указали в ссылках выше. Нужно от 1 до 5 изображений.</p></div></div>
         <div class="form-fields">
           <div class="site-fetch">
             <template v-if="websiteLinks.length">
               <label v-if="websiteLinks.length > 1">С какого сайта подбирать
                 <select v-model="fetchFromUrl"><option v-for="link in websiteLinks" :key="link.url" :value="link.url">{{ link.url }}</option></select>
               </label>
-              <button class="text-button" type="button" :disabled="fetchPending" @click="fetchSiteImages">
+              <button class="pill-button pill-button--soft" type="button" :disabled="fetchPending" @click="fetchSiteImages">
+                <AppIcon name="image" />
                 {{ fetchPending ? 'Загружаем…' : `Подтянуть картинки с сайта (${fetchFromUrl})` }}
               </button>
             </template>
@@ -302,7 +303,7 @@ async function submit() {
             <div v-for="(image, index) in form.images" :key="index" class="image-editor">
               <img :src="image.url" loading="lazy" alt="">
               <input v-model="image.alt" required minlength="3" placeholder="Описание изображения (alt)">
-              <button type="button" aria-label="Удалить изображение" @click="removeImage(index)">×</button>
+              <button type="button" class="icon-button" aria-label="Удалить изображение" @click="removeImage(index)"><AppIcon name="close" /></button>
             </div>
           </div>
         </div>
@@ -312,7 +313,7 @@ async function submit() {
         <label class="publish-toggle"><input v-model="form.publish" type="checkbox"><span>{{ brand ? 'Опубликован' : 'Опубликовать сразу' }}</span></label>
         <div>
           <p v-if="submitError" class="form-error">{{ submitError }}</p>
-          <button class="primary-button" type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Сохраняем…' : brand ? 'Сохранить изменения' : 'Сохранить бренд' }}</button>
+          <button class="pill-button pill-button--accent pill-button--large" type="submit" :disabled="isSubmitting"><AppIcon name="check" />{{ isSubmitting ? 'Сохраняем…' : brand ? 'Сохранить изменения' : 'Сохранить бренд' }}</button>
         </div>
       </footer>
     </form>

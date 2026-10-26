@@ -12,9 +12,6 @@ onMounted(() => init())
     <NuxtRouteAnnouncer />
     <SiteHeader />
     <NuxtPage />
-    <footer class="site-footer">
-      <span>Atelier Index</span>
-      <span>Бренды, а не бесконечная товарная лента</span>
-    </footer>
+    <BrandModal />
   </div>
 </template>

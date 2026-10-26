@@ -27,8 +27,9 @@ async function submit() {
 
 <template>
   <main class="auth-page">
-    <p class="eyebrow">Вход</p>
-    <h1>Войдите в свою библиотеку</h1>
+    <span class="auth-page__icon"><AppIcon name="heart" /></span>
+    <h1>С возвращением</h1>
+    <p class="auth-page__lead">Войдите, чтобы видеть свои сохранённые бренды.</p>
     <form class="auth-form" @submit.prevent="submit">
       <label>
         Email
@@ -38,9 +39,9 @@ async function submit() {
         Пароль
         <input v-model="password" type="password" required autocomplete="current-password">
       </label>
-      <p v-if="errorMessage" class="state-message state-message--error">{{ errorMessage }}</p>
-      <button type="submit" :disabled="pending">{{ pending ? 'Входим…' : 'Войти' }}</button>
+      <p v-if="errorMessage" class="notice notice--error">{{ errorMessage }}</p>
+      <button class="pill-button pill-button--accent pill-button--large" type="submit" :disabled="pending">{{ pending ? 'Входим…' : 'Войти' }}</button>
     </form>
-    <p>Нет аккаунта? <NuxtLink :to="{ path: '/register', query: route.query }">Зарегистрироваться</NuxtLink></p>
+    <p class="auth-page__switch">Нет аккаунта? <NuxtLink :to="{ path: '/register', query: route.query }">Зарегистрироваться</NuxtLink></p>
   </main>
 </template>

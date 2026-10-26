@@ -18,14 +18,21 @@ export async function hydrateBrand(db: ReturnType<typeof useDatabase>, row: type
   }
 }
 
+// Параметр может прийти один раз (строка) или несколько (?country=RU&country=GE — массив)
+function toList(value: unknown): string[] {
+  return (Array.isArray(value) ? value : [value]).map(item => String(item ?? '').trim()).filter(Boolean)
+}
+
 export function filterBrands(brandsList: Brand[], query: Record<string, unknown>): Brand[] {
   const q = String(query.q || '').trim().toLowerCase()
-  const country = String(query.country || '')
+  const names = toList(query.brand).map(name => name.toLowerCase())
+  const countries = toList(query.country)
   const category = String(query.category || '')
 
   return brandsList.filter((brand) => {
     if (q && !brand.name.toLowerCase().includes(q)) return false
-    if (country && !brand.countries.includes(country)) return false
+    if (names.length && !names.includes(brand.name.toLowerCase())) return false
+    if (countries.length && !brand.countries.some(country => countries.includes(country))) return false
     if (category && !brand.categories.includes(category)) return false
     return true
   })

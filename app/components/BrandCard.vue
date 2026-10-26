@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { Brand } from '~~/shared/types/brand'
-import { COUNTRY_OPTIONS } from '~~/shared/constants/catalog'
+import { CATEGORY_ICONS, countryLabel } from '~~/shared/constants/catalog'
 
 const props = defineProps<{ brand: Brand }>()
 
-const countryNames: Record<string, string> = Object.fromEntries(COUNTRY_OPTIONS.map(c => [c.value, c.label]))
+const route = useRoute()
+// Карточка открывается модальным окном поверх текущей страницы
+const brandLink = computed(() => ({ query: { ...route.query, brand: props.brand.slug } }))
 
 const { isSaved, toggle } = useSavedBrands()
 const toggling = ref(false)
@@ -21,27 +23,25 @@ async function onToggleSave() {
 
 <template>
   <article class="brand-card">
-    <NuxtLink class="brand-card__image" :to="`/brands/${brand.slug}`">
-      <img :src="brand.images[0]?.url" :alt="brand.images[0]?.alt || brand.name">
+    <NuxtLink class="brand-card__image" :to="brandLink">
+      <img :src="brand.images[0]?.url" :alt="brand.images[0]?.alt || brand.name" loading="lazy">
     </NuxtLink>
     <button
       type="button"
       class="brand-card__save"
       :class="{ 'brand-card__save--active': isSaved(brand.id) }"
       :aria-pressed="isSaved(brand.id)"
-      :aria-label="isSaved(brand.id) ? 'Убрать из библиотеки' : 'Сохранить бренд'"
+      :aria-label="isSaved(brand.id) ? 'Убрать из моих брендов' : 'Сохранить бренд'"
       :disabled="toggling"
       @click="onToggleSave"
-    >{{ isSaved(brand.id) ? '♥' : '♡' }}</button>
+    ><AppIcon name="heart" :filled="isSaved(brand.id)" /></button>
     <div class="brand-card__body">
-      <div class="brand-card__meta">
-        <span>{{ brand.countries.map(code => countryNames[code] || code).join(', ') }}</span>
-      </div>
-      <NuxtLink :to="`/brands/${brand.slug}`">
+      <p class="brand-card__meta">{{ brand.countries.map(countryLabel).join(', ') }}</p>
+      <NuxtLink :to="brandLink">
         <h2>{{ brand.name }}</h2>
       </NuxtLink>
       <div class="tag-row">
-        <span v-for="tag in brand.categories" :key="tag">{{ tag }}</span>
+        <span v-for="tag in brand.categories" :key="tag" class="tag"><AppIcon :name="CATEGORY_ICONS[tag] || 'tag'" /> {{ tag }}</span>
       </div>
     </div>
   </article>

@@ -12,7 +12,7 @@ export default defineNuxtConfig({
       title: 'Atelier Index — каталог fashion-брендов',
       meta: [
         { name: 'description', content: 'Открывайте независимые fashion-бренды со всего мира и собирайте свою библиотеку.' },
-        { name: 'theme-color', content: '#171713' }
+        { name: 'theme-color', content: '#fbf4f1' }
       ],
       link: [
         { rel: 'icon', href: '/icon.svg', type: 'image/svg+xml' }
@@ -33,8 +33,8 @@ export default defineNuxtConfig({
       name: 'Atelier Index',
       short_name: 'Atelier',
       description: 'Каталог независимых fashion-брендов',
-      theme_color: '#171713',
-      background_color: '#f4f1ea',
+      theme_color: '#fbf4f1',
+      background_color: '#fbf4f1',
       display: 'standalone',
       start_url: '/',
       lang: 'ru',
@@ -43,7 +43,8 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      navigateFallback: '/',
+      // Каталог отрисовывается на сервере и меняется — сохранённая копия «/» показывала бы старые бренды
+    navigateFallback: null,
       globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
       runtimeCaching: [
         {
@@ -56,6 +57,7 @@ export default defineNuxtConfig({
         }
       ]
     },
-    devOptions: { enabled: true, type: 'module' }
+    // В разработке сервис-воркер отдавал устаревший HTML главной и ломал страницу
+    devOptions: { enabled: false, type: 'module' }
   }
 })

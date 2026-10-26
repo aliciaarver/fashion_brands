@@ -1,69 +1,55 @@
 <script setup lang="ts">
 import type { Brand } from '~~/shared/types/brand'
-import { CATEGORY_OPTIONS, COUNTRY_OPTIONS } from '~~/shared/constants/catalog'
+import { pluralize } from '~~/shared/utils/plural'
+import { catalogFiltersToQuery, emptyCatalogFilters } from '~~/shared/utils/filters'
 
 definePageMeta({ middleware: 'auth' })
 
-const filters = reactive({ q: '', country: '', category: '' })
-const query = computed(() => Object.fromEntries(Object.entries(filters).filter(([, value]) => value)))
+const filters = ref(emptyCatalogFilters())
+const query = computed(() => catalogFiltersToQuery(filters.value))
 const { data: brands, status, error, refresh } = await useFetch<Brand[]>('/api/library', { query, watch: [query] })
+// Отдельный список без фильтров — для выпадающего списка брендов, чтобы он не сужался после выбора
+const { data: allBrands, refresh: refreshAll } = await useFetch<Brand[]>('/api/library')
+const brandNames = computed(() => (allBrands.value || []).map(brand => brand.name).sort((a, b) => a.localeCompare(b, 'ru')))
 
-const hasFilters = computed(() => Object.values(filters).some(Boolean))
-function resetFilters() {
-  Object.assign(filters, { q: '', country: '', category: '' })
-}
+const route = useRoute()
+// Сердечко в модальном окне могло убрать бренд — после закрытия окна обновляем список
+watch(() => route.query.brand, (value, previous) => {
+  if (previous && !value) Promise.all([refresh(), refreshAll()])
+})
 
 const { unsave } = useSavedBrands()
 async function removeBrand(brandId: string) {
   await unsave(brandId)
-  await refresh()
+  await Promise.all([refresh(), refreshAll()])
 }
 </script>
 
 <template>
-  <main class="catalog-layout" style="padding-top: 48px;">
-    <aside class="filters" aria-label="Фильтры библиотеки">
-      <div class="filters__heading">
-        <span>Фильтры</span>
-        <button v-if="hasFilters" type="button" @click="resetFilters">Сбросить</button>
-      </div>
-      <label>
-        Поиск
-        <input v-model="filters.q" type="search" placeholder="Название бренда">
-      </label>
-      <label>
-        Страна
-        <select v-model="filters.country">
-          <option value="">Все страны</option>
-          <option v-for="country in COUNTRY_OPTIONS" :key="country.value" :value="country.value">{{ country.label }}</option>
-        </select>
-      </label>
-      <label>
-        Категория
-        <select v-model="filters.category">
-          <option value="">Все категории</option>
-          <option v-for="category in CATEGORY_OPTIONS" :key="category" :value="category">{{ category }}</option>
-        </select>
-      </label>
-    </aside>
+  <main>
+    <section class="hero hero--compact">
+      <h1>Мои <em>бренды</em></h1>
+      <p class="hero__copy">Всё, что вы сохранили, — в одном месте.</p>
+    </section>
 
-    <div class="catalog-results">
-      <div class="catalog-results__head">
-        <h2>Моя библиотека</h2>
-        <span>{{ brands?.length || 0 }} брендов</span>
-      </div>
-      <p v-if="status === 'pending'" class="state-message">Загружаем библиотеку…</p>
-      <p v-else-if="error" class="state-message state-message--error">Не удалось загрузить библиотеку.</p>
-      <div v-else-if="brands?.length" class="brand-grid">
+    <section class="catalog">
+      <CatalogFilters v-model="filters" :brand-names="brandNames" />
+
+      <p class="catalog__count">{{ pluralize(brands?.length || 0, ['бренд', 'бренда', 'брендов']) }}</p>
+      <p v-if="status === 'pending' && !brands" class="state-message">Загружаем ваши бренды…</p>
+      <p v-else-if="error" class="state-message state-message--error">Не удалось загрузить сохранённые бренды.</p>
+      <div v-else-if="brands?.length" class="brand-grid" :class="{ 'brand-grid--refreshing': status === 'pending' }" :aria-busy="status === 'pending'">
         <div v-for="brand in brands" :key="brand.id" class="library-item">
           <BrandCard :brand="brand" />
-          <button type="button" class="library-item__remove" @click="removeBrand(brand.id)">Убрать из библиотеки</button>
+          <button type="button" class="pill-button pill-button--soft library-item__remove" @click="removeBrand(brand.id)">
+            <AppIcon name="trash" /> Убрать
+          </button>
         </div>
       </div>
       <div v-else class="empty-state">
-        <p>Вы пока ничего не сохранили. Загляните в каталог и добавьте первые бренды.</p>
-        <NuxtLink class="primary-link" to="/">Перейти в каталог →</NuxtLink>
+        <p>Вы пока ничего не сохранили. Загляните в каталог и нажмите на сердечко у понравившихся брендов.</p>
+        <NuxtLink class="pill-button pill-button--accent" to="/"><AppIcon name="grid" /> Перейти в каталог</NuxtLink>
       </div>
-    </div>
+    </section>
   </main>
 </template>
